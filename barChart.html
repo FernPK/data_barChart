@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src='https://d3js.org/d3.v4.min.js'></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+  <script>
+    const req = new XMLHttpRequest();
+    req.open('GET', 'https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json', true);
+    req.send();
+    req.onload = function(){
+      const paddingX = 80;
+      const paddingY = 40;
+      const width = 900;
+      const height = 500;
+      const json = JSON.parse(req.responseText);
+      const scaleX = d3.scaleTime();
+      const year = json.data.map(item => new Date(item[0]));
+      scaleX.domain([d3.min(year), d3.max(year)]);
+      scaleX.range([paddingX, width]);
+
+      const scaleY = d3.scaleLinear();
+      scaleY.domain([0, d3.max(json.data, d => d[1])]);
+      scaleY.range([height-paddingY, 0]); 
+
+      d3.select('#canvas')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .selectAll('rect')
+        .data(json.data)
+        .enter()
+        .append('rect')
+        .attr('x', d => scaleX(new Date(d[0])))
+        .attr('y', d => scaleY(d[1]))
+        .attr('width', (width-paddingX) / json.data.length)
+        .attr('height', d => height-paddingY - scaleY(d[1]))
+        .attr('fill', '#F05E16')
+        .attr('class', 'bar')
+        .attr('data-date', d => d[0])
+        .attr('data-gdp', d => d[1]);
+
+      d3.selectAll('rect').on('mouseover', function() {
+        const data_date = d3.select(this).attr('data-date');
+        const data_gdp = d3.select(this).attr('data-gdp');
+        const xPos = d3.select(this).attr('x');
+        const yPos = d3.select(this).attr('y');
+        d3.select('#tooltip')
+          .attr('data-date', data_date)
+          .attr('data-gdp', data_gdp);
+        d3.select('#tooltip')
+          .style('display', 'block')
+          .style('top', Number(yPos)-50 + 'px')
+          .style('left', Number(xPos)-80 + 'px')
+          .text(data_date + ' GDP: ' + data_gdp);
+      });
+
+      d3.selectAll('rect').on('mouseout', function() {
+        d3.select('#tooltip')
+          .style('display', 'none');
+      });
+
+      const xAxis = d3.axisBottom(scaleX);
+      d3.select('svg')
+        .append('g')
+        .attr('transform', 'translate(0,' + (height-paddingY) + ')')
+        .attr('class', 'tick')
+        .attr('id', 'x-axis')
+        .style('font-family', "'Roboto', sans-serif")
+        .call(xAxis.tickSizeOuter(0));
+      d3.select('svg')
+        .append('text')
+        .attr("text-anchor", "end")
+        .attr("transform", "rotate(-90)")
+        .attr('x', -10)
+        .attr('y', 20)
+        .style('font-family', "'Roboto', sans-serif")
+        .style('font-size', '14px')
+        .text('Gross-Domestic Product');
+
+      const yAxis = d3.axisLeft(scaleY);
+      d3.select('svg')
+        .append('g')
+        .attr('transform', 'translate(' + paddingX + ', 0)')
+        .attr('class', 'tick')
+        .attr('id', 'y-axis')
+        .style('font-family', "'Roboto', sans-serif")
+        .call(yAxis.tickSizeOuter(0));
+      d3.select('svg')
+        .append('text')
+        .attr("text-anchor", "end")
+        .attr('x', width)
+        .attr('y', height-5)
+        .style('font-family', "'Roboto', sans-serif")
+        .style('font-size', '14px')
+        .text('Time');
+    }
+  </script>
+  <div id="container">
+    <h1 id="title">United States GDP</h1>
+    <div id="canvas">
+      <div id="tooltip"></div>
+    </div>
+    <a href="https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json" id="dataset">Dataset: https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json</a>
+  </div>
+</body>
+</html>
